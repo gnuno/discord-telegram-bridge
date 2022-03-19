@@ -49,25 +49,23 @@ app.listen(PORT, () => {
 
 const Discord = require("discord.js");
 const client = new Discord.Client();
-var telegram = require("natsvora-telegram-bot-api");
+const telegram = require("natsvora-telegram-bot-api");
 
 // import env variables
-var telegramToken = process.env.TELEGRAM_BOT_TOKEN
+const telegramToken = process.env.TELEGRAM_BOT_TOKEN
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN
 
 let discord_webhooks = JSON.parse(process.env.DISCORD_WEBHOOKS)
 let discord_ids = JSON.parse(process.env.DISCORD_ID)
 let telegram_ids = JSON.parse(process.env.TELEGRAM_IDS)
 
-console.log(discord_webhooks, discord_ids, telegram_ids);
-
 let webhooks = discord_webhooks.map((webhook, index) => {
-    let webhook_values = webhook.split("/")
-    return new Discord.WebhookClient(webhook_values[0], webhook_values[1])
+  let webhook_values = webhook.split("/")
+  return new Discord.WebhookClient(webhook_values[0], webhook_values[1])
 })
 
 // initializes the telegram bot and starts listening for updates (new messages)
-var api = new telegram({
+const api = new telegram({
   token: telegramToken,
   updates: {
     enabled: true
@@ -80,110 +78,129 @@ client.once("ready", () => {
 // initializes discord bot
 
 client.login(DISCORD_TOKEN);
+try {
+  // if the discord bot receives a message
+  client.on("message", message => {
+    let index = discord_ids.indexOf(message.channel.id + "");
+    if (index == -1) return;
 
-// if the discord bot receives a message
-client.on("message", message => {
-  let index = discord_ids.indexOf(message.channel.id+""); 
-  // the program currently check if the message's from a bot to check for duplicates. This isn't the best method but it's good enough. A webhook counts as a bot in the discord api, don't ask me why.
-  if (index > -1 && message.author.bot === false) {
-    let mentioned_usernames = []
-    for (let mention of message.mentions.users) { mentioned_usernames.push("@" + mention[1].username) }
-    var attachmentUrls = []
-    for (let attachment of message.attachments) {
-      attachmentUrls.push(attachment[1].url)
-    }
-    // attachmentUrls is empty when there are no attachments so we can be just lazy
-    var finalMessageContent = message.content.replace(/<@.*>/gi, '')
-    api.sendMessage({
-      chat_id: telegram_ids[index],
-      text: message.author.username + ": " + finalMessageContent + " " + attachmentUrls.join(' ') + mentioned_usernames.join(" ")
-    });
-
-  }
-});
-
-var photoUrl = "";
-api.on("message", function (message) {
-  console.log(message)
-  var filePath = ""
-  let index = telegram_ids.indexOf(message.chat.id+"")
-  if (index > -1 && message.from.is_bot == false) {
-    // this part gets the user profile photos as the variable names suggest
-    let getProfilePic = new Promise(function (resolve, reject) {
-      var profilePhotos = api.getUserProfilePhotos({ user_id: message.from.id });
-      profilePhotos.then(function (data) {
-        // if user has a profile photo
-        if (data.total_count > 0) {
-          var file = api.getFile({ file_id: data.photos[0][0].file_id });
-          file.then(function (result) {
-            var filePath = result.file_path;
-            resolve("https://api.telegram.org/file/bot" + telegramToken + "/" + filePath);
-
-          });
-        } else {
-          //console.log("telegram pfp")
-          resolve("https://telegram.org/img/t_logo.png");
-        }
-      });
-    });
-    getProfilePic.then(function (profile_url) {
-      // if the message contains media
-      if (message.document || message.photo || message.sticker || message.voice) {
-        if (message.document) {
-          var document = api.getFile({ file_id: message.document.file_id });
-          document.then(function (data) {
-            var documentUrl =
-              "https://api.telegram.org/file/bot" + telegramToken + "/" + data.filePath;
-              webhooks[index].send(message.caption, {
-              username: message.from.first_name,
-              avatarURL: profile_url,
-              files: [documentUrl]
-            });
-          });
-        }
-        if (message.sticker) {
-          var sticker = api.getFile({ file_id: message.sticker.file_id })
-          sticker.then(function (data) {
-            var sticker_url =
-              "https://api.telegram.org/file/bot" + telegramToken + "/" + data.file_path;
-              webhooks[index].send(message.caption, {
-              username: message.from.first_name,
-              avatarURL: profile_url,
-              files: [sticker_url]
-            });
-          });
-        }
-        if (message.photo) {
-          var photo = api.getFile({ file_id: message.photo[0].file_id });
-          photo.then(function (data) {
-            var photoUrl =
-              "https://api.telegram.org/file/bot" + telegramToken + "/" + data.file_path;
-              webhooks[index].send(message.caption, {
-              username: message.from.first_name,
-              avatarURL: profile_url,
-              files: [photoUrl]
-            });
-          });
-        }
-        if (message.voice) {
-          var voice = api.getFile({ file_id: message.voice.file_id });
-          voice.then(function (data) {
-            var voiceUrl =
-              "https://api.telegram.org/file/bot" + telegramToken + "/" + data.file_path;
-              webhooks[index].send("Mensaje de voz de " + message.from.first_name, {
-              username: message.from.first_name,
-              avatarURL: profile_url,
-              files: [voiceUrl]
-            });
-          });
-        }
-      } else {
-        webhooks[index].send(message.text, {
-          username: message.from.first_name,
-          avatarURL: profile_url
-        });
+    // the program currently check if the message's from a bot to check for duplicates. This isn't the best method but it's good enough. A webhook counts as a bot in the discord api, don't ask me why.
+    if (index > -1 && message.author.bot === false) {
+      let mentioned_usernames = []
+      for (let mention of message.mentions.users) { mentioned_usernames.push("@" + mention[1].username) }
+      let attachmentUrls = []
+      for (let attachment of message.attachments) {
+        attachmentUrls.push(attachment[1].url)
       }
+      // attachmentUrls is empty when there are no attachments so we can be just lazy
+      const finalMessageContent = message.content.replace(/<@.*>/gi, '')
+      api.sendMessage({
+        chat_id: telegram_ids[index],
+        text: message.author.username + ": " + finalMessageContent + " " + attachmentUrls.join(' ') + mentioned_usernames.join(" ")
+      });
+
+    }
+
+  });
+
+  const getProfilePic = async (user_ids) => {
+    let profile_pics = []
+    for (let i = 0; i < user_ids.length; i++) {
+      let user_id = user_ids[i]
+      const profilePhotos = await api.getUserProfilePhotos({ user_id: user_id.id });
+      if (profilePhotos.total_count > 0) {
+        const file = await api.getFile({ file_id: profilePhotos.photos[0][0].file_id });
+        const filePath = file.file_path;
+        profile_pics.push("https://api.telegram.org/file/bot" + telegramToken + "/" + filePath)
+      } else {
+        profile_pics.push("https://telegram.org/img/t_logo.png")
+      }
+    }
+    return profile_pics;
+  }
+
+
+  api.on("message", async function (message) {
+    let index = telegram_ids.indexOf(message.chat.id + "")
+    if (index == -1) return;
+
+    let users = message.left_chat_member ? [message.left_chat_member] : 
+                (message.new_chat_members ? message.new_chat_members : [message.from]);
+    const profilePics = await getProfilePic(users);
+
+    users.forEach(async (user, indexOfUser) => {
+      // this part gets the user profile photos as the variable names suggest
+
+      let profile_picture = profilePics[indexOfUser];
+
+      // if the message contains media
+      if (message.document) {
+        const document = await api.getFile({ file_id: message.document.file_id });
+        const documentUrl = "https://api.telegram.org/file/bot" + telegramToken + "/" + document.file_path;
+        webhooks[index].send(message.caption, {
+          username: user.first_name,
+          avatarURL: profile_picture,
+          files: [documentUrl]
+        });
+
+        return;
+      }
+      if (message.sticker) {
+        const sticker = await api.getFile({ file_id: message.sticker.file_id })
+        const sticker_url = "https://api.telegram.org/file/bot" + telegramToken + "/" + sticker.file_path;
+        webhooks[index].send(message.caption, {
+          username: user.first_name,
+          avatarURL: profile_picture,
+          files: [sticker_url]
+        });
+        return;
+      }
+      if (message.photo) {
+        const photo = await api.getFile({ file_id: message.photo[message.photo.length - 1].file_id });
+        const photoUrl = "https://api.telegram.org/file/bot" + telegramToken + "/" + photo.file_path;
+        webhooks[index].send(message.caption, {
+          username: user.first_name,
+          avatarURL: profile_picture,
+          files: [photoUrl]
+        });
+        return;
+      }
+      if (message.voice) {
+        const voice = await api.getFile({ file_id: message.voice.file_id });
+        const voiceUrl = "https://api.telegram.org/file/bot" + telegramToken + "/" + voice.file_path;
+        webhooks[index].send("Mensaje de voz de " + user.first_name, {
+          username: user.first_name,
+          avatarURL: profile_picture,
+          files: [voiceUrl]
+        });
+        return;
+      }
+      if (message.new_chat_members) {
+        webhooks[index].send("*Se ha unido " + user.first_name + "*", {
+          username: user.first_name,
+          avatarURL: profile_picture
+        });
+        return;
+      }
+      if (message.left_chat_member){
+        webhooks[index].send("*"+message.left_chat_member.first_name +" ha dejado el grupo*", {
+          username: message.left_chat_member.first_name,
+          avatarURL: profile_picture
+        });
+        return;
+      }
+
+      webhooks[index].send(message.text, {
+        username: user.first_name,
+        avatarURL: profile_picture
+      });
+
+
     })
 
-  }
-});
+  });
+
+
+} catch (e) {
+  console.log("E")
+}
