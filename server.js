@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const fetch = require("node-fetch");
+require('dotenv').config()
 
 const wakeUpDyno = (url, interval = 25, callback) => {
     const milliseconds = interval * 60000;
@@ -99,74 +100,86 @@ for(let mention of message.mentions.users){mentioned_usernames.push("@"+mention[
 });
 
 var photoUrl = "";
-api.on("message", function(message) {
+api.on("message", function (message) {
   // console.log(message)
   var filePath = ""
   if (message.chat.id == telegramChatId && message.from.is_bot == false) {
-        // this part gets the user profile photos as the variable names suggest
-        let getProfilePic = new Promise(function(resolve, reject) {
-          var profilePhotos = api.getUserProfilePhotos({ user_id: message.from.id });
-          profilePhotos.then(function(data) {
-                // if user has a profile photo
-                if (data.total_count > 0) {
-                  var file = api.getFile({ fileId: data.photos[0][0].fileId });
-                  file.then(function(result) {
-                    var filePath = result.filePath;
+    // this part gets the user profile photos as the variable names suggest
+    let getProfilePic = new Promise(function (resolve, reject) {
+      var profilePhotos = api.getUserProfilePhotos({ user_id: message.from.id });
+      profilePhotos.then(function (data) {
+        // if user has a profile photo
+        if (data.total_count > 0) {
+          var file = api.getFile({ file_id: data.photos[0][0].file_id });
+          file.then(function (result) {
+            var filePath = result.file_path;
+            resolve("https://api.telegram.org/file/bot" + telegramToken + "/" + filePath);
 
-                    resolve("https://api.telegram.org/file/bot" + telegramToken + "/" + filePath);
-
-                  });
-                } else {
-                    //console.log("telegram pfp")
-                    resolve("https://telegram.org/img/t_logo.png");
-                  }
-                });
-        });
-        getProfilePic.then(function(profile_url) { 
-          // if the message contains media
-          if (message.document || message.photo || message.sticker) {
-            if (message.document) {
-              var document = api.getFile({ fileId: message.document.fileId });
-              document.then(function(data) {
-                var documentUrl =
-                  "https://api.telegram.org/file/bot" + telegramToken + "/" +  data.filePath;
-                webhookClient.send(message.caption, {
-                  username: message.from.first_name,
-                  avatarURL: profile_url,
-                  files: [documentUrl]
-                });
-              });
-            }
-            if(message.sticker){
-              var sticker = api.getFile({ fileId: message.sticker.fileId })
-              sticker.then(function(data) {
-                var sticker_url =
-                  "https://api.telegram.org/file/bot" + telegramToken + "/" +  data.filePath;
-                webhookClient.send(message.caption, {
-                  username: message.from.first_name,
-                  avatarURL: profile_url,
-                  files: [sticker_url]
-                });
-              });
-          }
-            if (message.photo) {
-              var photo = api.getFile({ fileId: message.photo[0].fileId });
-              photo.then(function(data) {
-                var photoUrl =
-                  "https://api.telegram.org/file/bot" + telegramToken +"/" +data.filePath;
-                webhookClient.send(message.caption, {
-                  username: message.from.first_name,
-                  avatarURL: profile_url,
-                  files: [photoUrl]
-                });
-              });
-            }
-          } else {
-            webhookClient.send(message.text, {
-              username: message.from.first_name,
-              avatarURL: profile_url
-            });
-          } })
-         
-      }
+          });
+        } else {
+          //console.log("telegram pfp")
+          resolve("https://telegram.org/img/t_logo.png");
+        }
+      });
     });
+    getProfilePic.then(function (profile_url) {
+      // if the message contains media
+      if (message.document || message.photo || message.sticker || message.voice) {
+        if (message.document) {
+          var document = api.getFile({ file_id: message.document.file_id });
+          document.then(function (data) {
+            var documentUrl =
+              "https://api.telegram.org/file/bot" + telegramToken + "/" + data.filePath;
+            webhookClient.send(message.caption, {
+              username: message.from.first_name,
+              avatarURL: profile_url,
+              files: [documentUrl]
+            });
+          });
+        }
+        if (message.sticker) {
+          var sticker = api.getFile({ file_id: message.sticker.file_id })
+          sticker.then(function (data) {
+            var sticker_url =
+              "https://api.telegram.org/file/bot" + telegramToken + "/" + data.file_path;
+            webhookClient.send(message.caption, {
+              username: message.from.first_name,
+              avatarURL: profile_url,
+              files: [sticker_url]
+            });
+          });
+        }
+        if (message.photo) {
+          var photo = api.getFile({ file_id: message.photo[0].file_id });
+          photo.then(function (data) {
+            var photoUrl =
+              "https://api.telegram.org/file/bot" + telegramToken + "/" + data.file_path;
+            webhookClient.send(message.caption, {
+              username: message.from.first_name,
+              avatarURL: profile_url,
+              files: [photoUrl]
+            });
+          });
+        }
+        if (message.voice) {
+          var voice = api.getFile({ file_id: message.voice.file_id });
+          voice.then(function (data) {
+            var voiceUrl =
+              "https://api.telegram.org/file/bot" + telegramToken + "/" + data.file_path;
+            webhookClient.send("Mensaje de voz de " + message.from.first_name, {
+              username: message.from.first_name,
+              avatarURL: profile_url,
+              files: [voiceUrl]
+            });
+          });
+        }
+      } else {
+        webhookClient.send(message.text, {
+          username: message.from.first_name,
+          avatarURL: profile_url
+        });
+      }
+    })
+
+  }
+});
