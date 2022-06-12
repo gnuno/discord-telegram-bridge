@@ -33,6 +33,39 @@ const wakeUpDyno = (url, interval = 25, callback) => {
   }, milliseconds);
 };
 
+const splitMessage = (message) => {
+    const listOfFragmentsOfMessage = message.split("\n");
+    let auxiliarMessages = [];
+    let finalMessages = [];
+
+    console.log(listOfFragmentsOfMessage)
+
+    listOfFragmentsOfMessage.forEach((internalMessage, index) => {
+        console.log(auxiliarMessages);
+        if((auxiliarMessages.join("\n").length + internalMessage.length + 3) < 2000){
+          auxiliarMessages.push(internalMessage);
+        }else if(internalMessage.length > 2000) {
+          let littleMessage = internalMessage.split(" ");
+          for(let i=0; i < littleMessage.length; i += 1997){
+            let subString = internalMessage.substring(i, i+1997);
+            if((auxiliarMessages.join("\n").length + subString.length + 3) < 2000){
+              auxiliarMessages.push(subString);
+            }else{
+              finalMessages.push(auxiliarMessages.join("\n"));
+              auxiliarMessages = [subString];              
+            }
+          }
+        }
+        else{
+          finalMessages.push(auxiliarMessages.join("\n"));
+          auxiliarMessages = [internalMessage];
+        }
+    })
+    finalMessages.push(auxiliarMessages.join("\n"));
+
+    return finalMessages;
+}
+
 // heroku specific
 const express = require("express");
 
@@ -137,7 +170,15 @@ try {
       if (message.document) {
         const document = await api.getFile({ file_id: message.document.file_id });
         const documentUrl = "https://api.telegram.org/file/bot" + telegramToken + "/" + document.file_path;
-        webhooks[index].send(message.caption, {
+        
+        const listOfMessages = splitMessage(message.caption);
+        listOfMessages.forEach(fragmentOfMessage => {
+          webhooks[index].send(fragmentOfMessage, {
+            username: user.first_name,
+            avatarURL: profile_picture,
+          });
+        })
+        webhooks[index].send("", {
           username: user.first_name,
           avatarURL: profile_picture,
           files: [documentUrl]
@@ -148,7 +189,14 @@ try {
       if (message.sticker) {
         const sticker = await api.getFile({ file_id: message.sticker.file_id })
         const sticker_url = "https://api.telegram.org/file/bot" + telegramToken + "/" + sticker.file_path;
-        webhooks[index].send(message.caption, {
+        const listOfMessages = splitMessage(message.caption);
+        listOfMessages.forEach(fragmentOfMessage => {
+          webhooks[index].send(fragmentOfMessage, {
+            username: user.first_name,
+            avatarURL: profile_picture,
+          });
+        })
+        webhooks[index].send("", {
           username: user.first_name,
           avatarURL: profile_picture,
           files: [sticker_url]
@@ -158,7 +206,14 @@ try {
       if (message.photo) {
         const photo = await api.getFile({ file_id: message.photo[message.photo.length - 1].file_id });
         const photoUrl = "https://api.telegram.org/file/bot" + telegramToken + "/" + photo.file_path;
-        webhooks[index].send(message.caption, {
+        const listOfMessages = splitMessage(message.caption);
+        listOfMessages.forEach(fragmentOfMessage => {
+          webhooks[index].send(fragmentOfMessage, {
+            username: user.first_name,
+            avatarURL: profile_picture,
+          });
+        })
+        webhooks[index].send("", {
           username: user.first_name,
           avatarURL: profile_picture,
           files: [photoUrl]
@@ -189,7 +244,13 @@ try {
         });
         return;
       }
-
+      const listOfMessages = splitMessage(message.text);
+      listOfMessages.forEach(fragmentOfMessage => {
+        webhooks[index].send(fragmentOfMessage, {
+          username: user.first_name,
+          avatarURL: profile_picture,
+        });
+      })
       webhooks[index].send(message.text, {
         username: user.first_name,
         avatarURL: profile_picture
