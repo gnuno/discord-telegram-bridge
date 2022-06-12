@@ -251,11 +251,6 @@ try {
           avatarURL: profile_picture,
         });
       })
-      webhooks[index].send(message.text, {
-        username: user.first_name,
-        avatarURL: profile_picture
-      });
-
 
     })
 
