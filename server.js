@@ -171,7 +171,7 @@ try {
         const document = await api.getFile({ file_id: message.document.file_id });
         const documentUrl = "https://api.telegram.org/file/bot" + telegramToken + "/" + document.file_path;
         
-        const listOfMessages = splitMessage(message.caption);
+        const listOfMessages = message.caption ? splitMessage(message.caption) : [];
         listOfMessages.forEach(fragmentOfMessage => {
           webhooks[index].send(fragmentOfMessage, {
             username: user.first_name,
@@ -189,7 +189,7 @@ try {
       if (message.sticker) {
         const sticker = await api.getFile({ file_id: message.sticker.file_id })
         const sticker_url = "https://api.telegram.org/file/bot" + telegramToken + "/" + sticker.file_path;
-        const listOfMessages = splitMessage(message.caption);
+        const listOfMessages = message.caption ? splitMessage(message.caption) : [];
         listOfMessages.forEach(fragmentOfMessage => {
           webhooks[index].send(fragmentOfMessage, {
             username: user.first_name,
@@ -206,7 +206,7 @@ try {
       if (message.photo) {
         const photo = await api.getFile({ file_id: message.photo[message.photo.length - 1].file_id });
         const photoUrl = "https://api.telegram.org/file/bot" + telegramToken + "/" + photo.file_path;
-        const listOfMessages = splitMessage(message.caption);
+        const listOfMessages = message.caption ? splitMessage(message.caption) : [];
         listOfMessages.forEach(fragmentOfMessage => {
           webhooks[index].send(fragmentOfMessage, {
             username: user.first_name,
