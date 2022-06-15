@@ -66,6 +66,8 @@ const splitMessage = (message) => {
     return finalMessages;
 }
 
+const listOfCommands = ["/help", "/ayuda", "/siu", "/campus", "/links", "/comunidades", "/comunidades_it", "/calendar", "/calendario", "/calendar feriados", "/mails"];
+
 // heroku specific
 const express = require("express");
 
@@ -127,6 +129,17 @@ try {
       }
       // attachmentUrls is empty when there are no attachments so we can be just lazy
       const finalMessageContent = message.content.replace(/<@.*>/gi, '')
+      if(listOfCommands.includes(finalMessageContent)){
+        api.sendMessage({
+          chat_id: telegram_ids[index],
+          text: message.author.username + " desde Discord ha invocado el comando " + finalMessageContent
+        });
+        api.sendMessage({
+          chat_id: telegram_ids[index],
+          text: finalMessageContent
+        });
+        return;        
+      }
       api.sendMessage({
         chat_id: telegram_ids[index],
         text: message.author.username + ": " + finalMessageContent + " " + attachmentUrls.join(' ') + mentioned_usernames.join(" ")
